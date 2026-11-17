@@ -131,7 +131,11 @@ body{
 }
 #app{background:transparent}
 .gamezone{
- background:linear-gradient(90deg,rgba(3,12,20,.08),rgba(3,12,20,.54) 24%,rgba(3,12,20,.54) 76%,rgba(3,12,20,.08));
+ background-color:#06111b;
+ background-image:linear-gradient(180deg,rgba(2,8,16,.12),rgba(2,8,16,.18)),url('./stadium-night.jpg');
+ background-position:center center;
+ background-size:cover;
+ background-repeat:no-repeat;
  box-shadow:inset 0 0 26px rgba(0,0,0,.3);
 }
 .gamezone:before{background:linear-gradient(180deg,rgba(2,8,15,.18),rgba(2,8,15,.42));opacity:1}
@@ -312,3 +316,36 @@ let repeat=null;document.querySelectorAll('[data-act]').forEach(b=>{let a=b.data
 document.addEventListener('keydown',e=>{let map={ArrowLeft:'left',ArrowRight:'right',ArrowDown:'down',ArrowUp:'rotate',' ':'drop'};if(e.key==='p'||e.key==='P'){pause();return}if(map[e.key]){e.preventDefault();prepareGameAudio();act(map[e.key])}});start();
 if('serviceWorker'in navigator && location.protocol!=='file:')window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();</script></body></html>
+<style>
+/* Functional stadium presentation: live game elements remain real DOM/canvas controls */
+.stats .stat{background:linear-gradient(145deg,rgba(8,24,39,.88),rgba(5,15,25,.88));}
+.controls{background:linear-gradient(145deg,rgba(8,25,39,.91),rgba(5,15,25,.91));}
+.bottom{background:linear-gradient(145deg,rgba(8,25,39,.93),rgba(5,15,25,.93));}
+.gamezone:before{background:linear-gradient(180deg,rgba(2,8,15,.08),rgba(2,8,15,.16));}
+</style>
+
+<style id="jg-blue-cyan-stadium-v17">
+html,body{background:#030b18!important}
+body{
+ background-image:linear-gradient(180deg,rgba(1,7,17,.18),rgba(1,7,17,.28)),url('./stadium-night.jpg')!important;
+ background-position:center center!important;
+ background-size:cover!important;
+ background-repeat:no-repeat!important;
+ background-attachment:fixed!important;
+}
+#app{background:transparent!important;position:relative;isolation:isolate}
+#app:before{display:none!important}
+.gamezone{
+ background:transparent!important;
+ box-shadow:none!important;
+}
+.gamezone:before,.gamezone:after{display:none!important;content:none!important}
+.stats .stat{background:linear-gradient(145deg,rgba(7,22,39,.94),rgba(4,13,26,.94))!important;border-color:#249bd0!important}
+.stats{background:rgba(3,12,25,.78)!important;border-color:#1a8cbe!important}
+.controls,.bottom{background:linear-gradient(145deg,rgba(5,22,39,.96),rgba(3,11,24,.96))!important;border-color:#168fc8!important}
+.btn{background:linear-gradient(135deg,#13d8f4,#0879d5)!important;border-color:#58eaff!important}
+.music-btn{border-color:#23c9ef!important;color:#baf7ff!important}
+@media(max-width:520px) and (orientation:portrait){
+ body{background-position:center center!important;background-attachment:scroll!important}
+}
+</style>
