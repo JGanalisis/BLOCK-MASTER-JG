@@ -1,8 +1,8 @@
 {
   "id": "./",
   "name": "BLOCK MASTER JG",
-  "short_name": "BLOCK JG",
-  "description": "Juego arcade de bloques de JG MATCHLAB",
+  "short_name": "BLOCK MASTER",
+  "description": "BLOCK MASTER JG: juego arcade de bloques con identidad futbolera de JG MATCHLAB.",
   "lang": "es",
   "start_url": "./index.html",
   "scope": "./",
@@ -11,6 +11,11 @@
   "background_color": "#080f17",
   "theme_color": "#09121b",
   "icons": [
-    {"src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
