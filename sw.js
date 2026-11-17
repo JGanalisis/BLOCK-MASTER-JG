@@ -1,4 +1,4 @@
-const CACHE = 'block-master-jg-v7';
+const CACHE = 'block-master-jg-v8';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-512.png', './block-master-logo.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
