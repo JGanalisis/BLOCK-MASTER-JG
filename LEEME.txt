@@ -1,0 +1,21 @@
+BLOCK MASTER JG - PAQUETE PWA
+
+CONTENIDO
+- index.html: juego completo en un solo archivo, con cruceta en +, botones A/B, música y temas.
+- manifest.webmanifest: configuración de instalación.
+- sw.js: caché para funcionamiento offline tras la primera visita.
+- icon-512.png: icono de la aplicación.
+
+PUBLICACIÓN
+Sube TODOS estos archivos manteniendo esta misma estructura a un hosting estático con HTTPS.
+La raíz publicada debe servir index.html, manifest.webmanifest, sw.js e icon-512.png.
+No requiere base de datos ni backend. La primera carga sí necesita conexión para descargar y almacenar los archivos.
+
+INSTALACIÓN EN IPHONE
+1. Abre la URL HTTPS en Safari.
+2. Pulsa Compartir.
+3. Selecciona Añadir a pantalla de inicio.
+4. Abre BLOCK JG desde su icono.
+
+NOTA
+Este paquete está preparado para publicar, pero todavía no tiene una URL pública. No se ha publicado desde aquí ni se afirma que esté probado en un iPhone físico.
