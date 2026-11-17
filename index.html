@@ -24,6 +24,33 @@ html[data-theme="light"] .overlay p{color:#405966}
 html[data-theme="light"] .theme-picker{color:#526875}
 html[data-theme="light"] .theme-picker select{background:#fff;color:#17232d;border-color:#8ba7b4}
 @media(max-width:380px){.theme-picker{gap:3px}.theme-picker select{max-width:95px;padding:6px 5px;font-size:10px}.bottom{gap:4px}}
+
+/* ESTADIO JG: ambientación visual sin invadir el tablero */
+html,body{background:#050b12}
+body{background:radial-gradient(ellipse at 50% 36%,#173b42 0%,#0b202a 42%,#050b12 78%)}
+#app{position:relative;isolation:isolate}
+#app:before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 50% 8%,rgba(105,225,255,.22),transparent 27%),radial-gradient(ellipse at 50% 95%,rgba(12,155,112,.16),transparent 34%),linear-gradient(180deg,#07131e 0%,#102a32 45%,#07111a 100%)}
+.brand{padding:2px 8px 4px;border-bottom:1px solid rgba(122,225,238,.22);filter:drop-shadow(0 3px 9px #0009)}
+.stats{padding:4px 5px;border:1px solid #416b78;border-radius:11px;background:linear-gradient(180deg,rgba(17,39,51,.96),rgba(5,15,24,.96));box-shadow:0 5px 18px #0008,inset 0 1px #ffffff18}
+.stat{border:1px solid #3c8791;background:linear-gradient(180deg,#1b3b47,#0b1d28);box-shadow:inset 0 0 12px #00d9f21a}
+.stat small{color:#8cf5ef;text-shadow:0 0 8px #00d9f277}
+.stat b{text-shadow:0 0 10px #00d9f255}
+.gamezone{isolation:isolate;border-radius:15px;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#285a55 0%,#143b3d 47%,#091923 100%);box-shadow:inset 0 0 35px #0009}
+.gamezone:before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:repeating-linear-gradient(90deg,transparent 0 13px,rgba(255,255,255,.055) 13px 15px),linear-gradient(180deg,rgba(4,12,20,.92),rgba(10,34,39,.28) 24%,rgba(10,34,39,.18) 76%,rgba(4,12,20,.94));opacity:.9}
+.gamezone:after{content:"✦     ✦     ✦     ✦     ✦";position:absolute;z-index:0;top:5px;left:0;right:0;text-align:center;letter-spacing:clamp(8px,4vw,24px);font-size:clamp(10px,2.2vw,17px);color:#d9fbff;opacity:.72;text-shadow:0 0 8px #fff,0 0 18px #57dfff;pointer-events:none}
+.field{z-index:1;border:3px solid #eafff8;border-radius:7px;background:#123f34;box-shadow:0 0 0 4px #0b1b25,0 0 0 6px #7ee8e1aa,0 12px 28px #000b,0 0 28px #5fffe155}
+.field canvas{background:transparent}
+.controls{background:linear-gradient(145deg,rgba(23,48,59,.98),rgba(6,17,27,.98));border-color:#4a7784;box-shadow:0 5px 18px #0007,inset 0 1px #ffffff1c}
+.bottom{padding:5px 7px;border:1px solid #315563;border-radius:11px;background:linear-gradient(180deg,rgba(15,34,45,.96),rgba(5,14,23,.96));box-shadow:0 5px 18px #0006}
+.record{color:#b7d1d8}
+.music-btn{box-shadow:0 0 12px #00d9e833}
+html[data-theme="light"] body{background:#dce9ed}
+html[data-theme="light"] #app:before{background:linear-gradient(180deg,#dcebf0,#b8d4d4 50%,#dce8ed)}
+html[data-theme="light"] .gamezone{background:radial-gradient(ellipse at center,#477e6a,#173f3b)}
+html[data-theme="light"] .stats,html[data-theme="light"] .bottom{background:linear-gradient(180deg,#f8ffff,#dce9ee);border-color:#8aaeb7}
+html[data-theme="light"] .stat{background:linear-gradient(180deg,#fff,#d9e9ed)}
+@media(max-width:380px){.gamezone:after{letter-spacing:7px;font-size:10px}.field{border-width:2px}}
+
 </style></head><body><main id="app">
 <header class="brand" aria-label="Logo permanente JG MATCHLAB"><img alt="BLOCK MASTER JG by Jorge Gramajo" src="block-master-logo.png"></header>
 <section class="stats"><div class="stat"><small>PUNTOS</small><b id="score">0</b></div><div class="stat"><small>NIVEL</small><b id="level">1</b></div><div class="stat"><small>GOLES ⚽</small><b id="lines">0</b></div></section>
@@ -37,74 +64,21 @@ const themeSelect=$('themeMode'),savedTheme=safeStore.get('bmjg-theme','auto');
 function applyTheme(mode){const resolved=mode==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):mode;document.documentElement.dataset.theme=resolved;themeSelect.value=mode;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=resolved==='light'?'#edf3f6':'#09121b';}
 applyTheme(savedTheme);themeSelect.addEventListener('change',()=>{safeStore.set('bmjg-theme',themeSelect.value);applyTheme(themeSelect.value)});
 if(window.matchMedia){const mq=window.matchMedia('(prefers-color-scheme: light)');const onChange=()=>{if(safeStore.get('bmjg-theme','auto')==='auto')applyTheme('auto')};if(mq.addEventListener)mq.addEventListener('change',onChange);else if(mq.addListener)mq.addListener(onChange);}
-// Ambiente de estadio: porras habladas en secuencia continua.
-// El audio se activa con un toque del usuario (Safari/iOS); no se reproduce música genérica durante el juego.
-let musicCtx=null,musicTimer=null,musicStep=0,musicOn=false,nextNoteTime=0;
-let chantTimer=null,chantIndex=0,chantBusy=false;
-const stadiumChants=[
- '¡Vamos, vamos, vamos, equipo, vamos!',
- '¡Esta es tu hinchada que te quiere ver campeón!',
- '¡Dale, dale, dale, que hoy tenemos que ganar!',
- '¡Olé, olé, olé, olé, olé, olá!',
- '¡Muchachos, dejen todo, que la gente está alentando!',
- '¡Sí se puede, sí se puede!',
- '¡Vamos equipo, con corazón y con pasión!',
- '¡Que se escuche fuerte, vamos a alentar!'
-];
-function scheduleNextChant(){clearTimeout(chantTimer);if(!musicOn||!('speechSynthesis'in window))return;chantTimer=setTimeout(speakNextChant,650)}
-function speakNextChant(){if(!musicOn||!('speechSynthesis'in window)||chantBusy)return;chantBusy=true;const phrase=stadiumChants[chantIndex%stadiumChants.length];chantIndex=(chantIndex+1)%stadiumChants.length;const u=new SpeechSynthesisUtterance(phrase);u.lang='es-MX';u.rate=.88;u.pitch=.82;u.volume=1;try{const voices=speechSynthesis.getVoices();const v=voices.find(x=>/^es(-|_)/i.test(x.lang));if(v)u.voice=v;}catch(e){}const finish=()=>{if(!chantBusy)return;chantBusy=false;scheduleNextChant()};u.onend=finish;u.onerror=finish;try{speechSynthesis.speak(u)}catch(e){finish()}}
-function startChants(){if(!('speechSynthesis'in window))return;try{speechSynthesis.cancel()}catch(e){}chantBusy=false;chantIndex=0;speakNextChant()}
-function stopChants(){clearTimeout(chantTimer);chantTimer=null;chantBusy=false;if('speechSynthesis'in window){try{speechSynthesis.cancel()}catch(e){}}}
-const melody=[659.25,783.99,987.77,783.99,587.33,698.46,880,698.46,523.25,659.25,783.99,659.25,587.33,698.46,880,1046.5];
-function scheduleMusicNote(){
- if(!musicCtx||musicCtx.state!=='running'||!musicOn)return;
- const now=musicCtx.currentTime;
- while(nextNoteTime<now+.12){
-  const t=nextNoteTime,step=musicStep%16,f=melody[step];
-  // Fanfarria original de estadio: metales sintéticos con melodía de celebración.
-  const horn=musicCtx.createOscillator(),hg=musicCtx.createGain(),filter=musicCtx.createBiquadFilter();
-  horn.type='sawtooth';horn.frequency.setValueAtTime(f,t);
-  filter.type='lowpass';filter.frequency.setValueAtTime(1500,t);
-  hg.gain.setValueAtTime(.0001,t);hg.gain.linearRampToValueAtTime(.052,t+.025);hg.gain.setValueAtTime(.038,t+.10);hg.gain.exponentialRampToValueAtTime(.0001,t+.29);
-  horn.connect(filter);filter.connect(hg);hg.connect(musicCtx.destination);horn.start(t);horn.stop(t+.30);
-  // Segunda voz tipo trompeta en los acentos.
-  if(step%4===0){
-   const brass=musicCtx.createOscillator(),bg=musicCtx.createGain();
-   brass.type='triangle';brass.frequency.setValueAtTime(f*1.5,t);
-   bg.gain.setValueAtTime(.0001,t);bg.gain.linearRampToValueAtTime(.035,t+.02);bg.gain.exponentialRampToValueAtTime(.0001,t+.24);
-   brass.connect(bg);bg.connect(musicCtx.destination);brass.start(t);brass.stop(t+.25);
-  }
-  // Bombo profundo en cada pulso y caja/palmas en los contratiempos.
-  const kick=musicCtx.createOscillator(),kg=musicCtx.createGain();
-  kick.type='sine';kick.frequency.setValueAtTime(115,t);kick.frequency.exponentialRampToValueAtTime(48,t+.13);
-  kg.gain.setValueAtTime(.0001,t);kg.gain.linearRampToValueAtTime(.19,t+.008);kg.gain.exponentialRampToValueAtTime(.0001,t+.17);
-  kick.connect(kg);kg.connect(musicCtx.destination);kick.start(t);kick.stop(t+.18);
-  if(step%4===2){
-   const nframes=Math.floor(musicCtx.sampleRate*.10),buf=musicCtx.createBuffer(1,nframes,musicCtx.sampleRate),d=buf.getChannelData(0);
-   for(let i=0;i<nframes;i++)d[i]=(Math.random()*2-1)*(1-i/nframes);
-   const clap=musicCtx.createBufferSource(),cg=musicCtx.createGain(),hp=musicCtx.createBiquadFilter();
-   clap.buffer=buf;hp.type='highpass';hp.frequency.value=1200;
-   cg.gain.setValueAtTime(.0001,t);cg.gain.linearRampToValueAtTime(.10,t+.006);cg.gain.exponentialRampToValueAtTime(.0001,t+.11);
-   clap.connect(hp);hp.connect(cg);cg.connect(musicCtx.destination);clap.start(t);clap.stop(t+.11);
-  }
-  musicStep++;nextNoteTime+=.22;
- }
-}
-function stopMusic(){musicOn=false;clearInterval(musicTimer);musicTimer=null;stopChants();if(musicCtx&&musicCtx.state==='running')musicCtx.suspend();}
+// Ambiente de estadio con la grabación real aportada por el usuario.
+// Se reproduce en bucle y solo comienza tras tocar PORRAS ON (requisito de iOS/Safari).
+let musicOn=false;
+const stadiumAudio=new Audio('./stadium-chants.mp3');
+stadiumAudio.loop=true;
+stadiumAudio.preload='auto';
+stadiumAudio.volume=0.82;
+function stopMusic(){musicOn=false;stadiumAudio.pause();try{stadiumAudio.currentTime=0}catch(e){}}
 function toggleMusic(){
  const btn=$('musicToggle');
  if(musicOn){stopMusic();btn.textContent='📣 PORRAS OFF';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');return;}
- try{
-  // Iniciar la primera voz de forma síncrona dentro del toque del usuario.
-  // Safari/iOS puede bloquear speechSynthesis si se llama después de un await.
-  musicOn=true;chantIndex=0;chantBusy=false;
-  if('speechSynthesis' in window){try{window.speechSynthesis.cancel();}catch(e){}speakNextChant();}
-  const AC=window.AudioContext||window.webkitAudioContext;
-  if(AC){if(!musicCtx)musicCtx=new AC();const resume=musicCtx.resume();if(resume&&resume.catch)resume.catch(()=>{});}
-  btn.textContent='📣 PORRAS ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
-  // Si iOS todavía está cargando las voces, reintentar cuando estén disponibles.
-  if('speechSynthesis' in window){window.speechSynthesis.onvoiceschanged=()=>{if(musicOn&&!chantBusy)speakNextChant();};}
- }catch(err){stopMusic();btn.textContent='REINTENTAR PORRAS';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
+ musicOn=true;
+ const result=stadiumAudio.play();
+ if(result&&typeof result.then==='function'){result.then(()=>{if(!musicOn)stadiumAudio.pause()}).catch(()=>{musicOn=false;btn.textContent='TOCA PARA REINTENTAR';btn.classList.remove('on');btn.setAttribute('aria-pressed','false')});}
+ btn.textContent='📣 PORRAS ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
 }
 $('musicToggle').addEventListener('click',toggleMusic);
 // Efecto original de explosión al completar una o más líneas.
@@ -144,10 +118,10 @@ function playCrowdGoal(){
  try{
   // Voz del estadio usando el motor de voz del dispositivo, sin descargar audio.
   if('speechSynthesis' in window){
-   window.speechSynthesis.cancel();clearTimeout(chantTimer);chantBusy=true;
+   window.speechSynthesis.cancel();
    const say=new SpeechSynthesisUtterance('¡Gooooool!');
    say.lang='es-MX';say.rate=.72;say.pitch=.72;say.volume=1;
-   say.onend=()=>{chantBusy=false;if(musicOn)scheduleNextChant()};say.onerror=()=>{chantBusy=false;if(musicOn)scheduleNextChant()};
+   say.onend=()=>{};say.onerror=()=>{};
    window.speechSynthesis.speak(say);
   }
   // Coro grave y agudo de aficionados sintetizado como apoyo.
