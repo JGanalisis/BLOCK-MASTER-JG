@@ -228,7 +228,7 @@ if(window.matchMedia){const mq=window.matchMedia('(prefers-color-scheme: light)'
 // Ambiente de estadio con la grabación real aportada por el usuario.
 // Se reproduce en bucle y solo comienza tras tocar PORRAS ON (requisito de iOS/Safari).
 let musicOn=false;
-const stadiumAudio=new Audio('./stadium-chants.mp3');
+const stadiumAudio=new Audio('./stadium-chants-v25.mp3');
 stadiumAudio.loop=true;
 stadiumAudio.preload='auto';
 stadiumAudio.volume=0.82;
@@ -273,16 +273,35 @@ function playLineExplosion(count){
  }catch(e){}
 }
 
-// Audio real de afición extraído de la grabación de cánticos aportada por el usuario.
-// Se mantiene independiente de las porras de ambiente para que ambas puedan sonar.
-const goalCrowdAudio=new Audio('./goal-crowd.mp3');
-goalCrowdAudio.preload='auto';
-function playCrowdGoal(count=1){
+// Celebración de gol: rugido de estadio y silbido breve, sintetizados localmente.
+
+// Grito de gol: varias voces superpuestas para simular a la afición.
+function playCrowdGoal(){
  try{
-  goalCrowdAudio.pause();goalCrowdAudio.currentTime=0;
-  goalCrowdAudio.volume=count>=3?1:0.82;
-  const result=goalCrowdAudio.play();
-  if(result&&typeof result.catch==='function')result.catch(()=>{});
+  // Voz del estadio usando el motor de voz del dispositivo, sin descargar audio.
+  if('speechSynthesis' in window){
+   window.speechSynthesis.cancel();
+   const say=new SpeechSynthesisUtterance('¡Gooooool!');
+   say.lang='es-MX';say.rate=.72;say.pitch=.72;say.volume=1;
+   say.onend=()=>{};say.onerror=()=>{};
+   window.speechSynthesis.speak(say);
+  }
+  // Coro grave y agudo de aficionados sintetizado como apoyo.
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  if(!musicCtx)musicCtx=new AC();const a=musicCtx;
+  const play=()=>{
+   const t=a.currentTime;
+   [105,132,158,196,220].forEach((f,i)=>{
+    const o=a.createOscillator(),g=a.createGain(),filter=a.createBiquadFilter();
+    o.type='sawtooth';o.frequency.setValueAtTime(f*(.96+Math.random()*.08),t);
+    o.frequency.linearRampToValueAtTime(f*(1.08+Math.random()*.08),t+.35);
+    o.frequency.setValueAtTime(f*(1.04+Math.random()*.08),t+1.0);
+    filter.type='bandpass';filter.frequency.value=650+i*110;filter.Q.value=.8;
+    g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.025,t+.12);g.gain.setValueAtTime(.02,t+.9);g.gain.exponentialRampToValueAtTime(.0001,t+1.55);
+    o.connect(filter);filter.connect(g);g.connect(a.destination);o.start(t);o.stop(t+1.6);
+   });
+  };
+  if(a.state==='running')play();else a.resume().then(()=>{if(a.state==='running')play()}).catch(()=>{});
  }catch(e){}
 }
 // Desbloqueo robusto para Safari/iOS: crear, reanudar y arrancar
@@ -343,7 +362,7 @@ const clone=m=>m.map(r=>r.slice()),rand=()=>shapes[Math.floor(Math.random()*shap
 function hit(p,dx=0,dy=0,m=p.m){for(let y=0;y<m.length;y++)for(let x=0;x<m[y].length;x++)if(m[y][x]){let xx=p.x+x+dx,yy=p.y+y+dy;if(xx<0||xx>=W||yy>=H||(yy>=0&&board[yy][xx]))return true}return false}
 function spawn(){piece=make(next);next=rand();if(hit(piece))finish()}
 function rotate(){let m=piece.m[0].map((_,i)=>piece.m.map(r=>r[i]).reverse());for(let k of [0,-1,1,-2,2])if(!hit(piece,k,0,m)){piece.x+=k;piece.m=m;break}}
-function lock(){piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v&&piece.y+y>=0)board[piece.y+y][piece.x+x]=piece.c}));let n=0;for(let y=H-1;y>=0;y--)if(board[y].every(Boolean)){for(let x=0;x<W;x++){let color=board[y][x];for(let k=0;k<5;k++)particles.push({x:x*S+S/2,y:y*S+S/2,vx:(Math.random()-.5)*7,vy:(Math.random()-.8)*7,life:1,color,size:2+Math.random()*4})}board.splice(y,1);board.unshift(Array(W).fill(0));n++;y++}if(n){goalFx=1;playLineExplosion(n);playGoalSound(n);playCrowdGoal(n);score+=[0,100,300,500,800][n]*level;lines+=n;level=Math.floor(lines/10)+1;flash=1}update();spawn()}
+function lock(){piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v&&piece.y+y>=0)board[piece.y+y][piece.x+x]=piece.c}));let n=0;for(let y=H-1;y>=0;y--)if(board[y].every(Boolean)){for(let x=0;x<W;x++){let color=board[y][x];for(let k=0;k<5;k++)particles.push({x:x*S+S/2,y:y*S+S/2,vx:(Math.random()-.5)*7,vy:(Math.random()-.8)*7,life:1,color,size:2+Math.random()*4})}board.splice(y,1);board.unshift(Array(W).fill(0));n++;y++}if(n){goalFx=1;playLineExplosion(n);playGoalSound(n);score+=[0,100,300,500,800][n]*level;lines+=n;level=Math.floor(lines/10)+1;flash=1}update();spawn()}
 function act(a){if(!active||paused||over)return;if(a==='left'&&!hit(piece,-1))piece.x--;if(a==='right'&&!hit(piece,1))piece.x++;if(a==='down'){if(!hit(piece,0,1)){piece.y++;score++}else lock()}if(a==='rotate')rotate();if(a==='drop'){let d=0;while(!hit(piece,0,1)){piece.y++;d++}score+=d*2;lock()}update();draw()}
 function update(){$('score').textContent=score.toLocaleString();$('level').textContent=level;$('lines').textContent=lines;$('best').textContent=best.toLocaleString()}
 function cell(color,x,y,alpha=1){ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.fillRect(x*S+1,y*S+1,S-2,S-2);ctx.fillStyle='#ffffff66';ctx.fillRect(x*S+3,y*S+3,S-6,4);ctx.fillStyle='#00000018';ctx.fillRect(x*S+3,y*S+S-6,S-6,3);ctx.strokeStyle='#0008';ctx.lineWidth=1;ctx.strokeRect(x*S+1,y*S+1,S-2,S-2);ctx.globalAlpha=1}
