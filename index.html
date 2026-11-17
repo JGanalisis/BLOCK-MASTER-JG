@@ -37,8 +37,8 @@ const themeSelect=$('themeMode'),savedTheme=safeStore.get('bmjg-theme','auto');
 function applyTheme(mode){const resolved=mode==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):mode;document.documentElement.dataset.theme=resolved;themeSelect.value=mode;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=resolved==='light'?'#edf3f6':'#09121b';}
 applyTheme(savedTheme);themeSelect.addEventListener('change',()=>{safeStore.set('bmjg-theme',themeSelect.value);applyTheme(themeSelect.value)});
 if(window.matchMedia){const mq=window.matchMedia('(prefers-color-scheme: light)');const onChange=()=>{if(safeStore.get('bmjg-theme','auto')==='auto')applyTheme('auto')};if(mq.addEventListener)mq.addEventListener('change',onChange);else if(mq.addListener)mq.addListener(onChange);}
-// Música arcade original generada localmente con Web Audio API.
-// El AudioContext se crea y se reanuda directamente desde el toque del usuario (Safari/iOS).
+// Ambiente de estadio: porras habladas en secuencia continua.
+// El audio se activa con un toque del usuario (Safari/iOS); no se reproduce música genérica durante el juego.
 let musicCtx=null,musicTimer=null,musicStep=0,musicOn=false,nextNoteTime=0;
 let chantTimer=null,chantIndex=0,chantBusy=false;
 const stadiumChants=[
@@ -51,8 +51,8 @@ const stadiumChants=[
  '¡Vamos equipo, con corazón y con pasión!',
  '¡Que se escuche fuerte, vamos a alentar!'
 ];
-function scheduleNextChant(){clearTimeout(chantTimer);if(!musicOn||!('speechSynthesis'in window))return;chantTimer=setTimeout(speakNextChant,850)}
-function speakNextChant(){if(!musicOn||!('speechSynthesis'in window)||chantBusy)return;chantBusy=true;const phrase=stadiumChants[chantIndex%stadiumChants.length];chantIndex=(chantIndex+1)%stadiumChants.length;const u=new SpeechSynthesisUtterance(phrase);u.lang='es-MX';u.rate=.88;u.pitch=.82;u.volume=1;try{const voices=speechSynthesis.getVoices();const v=voices.find(x=>/^es(-|_)/i.test(x.lang));if(v)u.voice=v;}catch(e){}const finish=()=>{if(!chantBusy)return;chantBusy=false;scheduleNextChant()};u.onend=finish;u.onerror=finish;try{speechSynthesis.speak(u);setTimeout(()=>{if(chantBusy&&musicOn){try{speechSynthesis.cancel()}catch(e){}finish()}},8500)}catch(e){finish()}}
+function scheduleNextChant(){clearTimeout(chantTimer);if(!musicOn||!('speechSynthesis'in window))return;chantTimer=setTimeout(speakNextChant,650)}
+function speakNextChant(){if(!musicOn||!('speechSynthesis'in window)||chantBusy)return;chantBusy=true;const phrase=stadiumChants[chantIndex%stadiumChants.length];chantIndex=(chantIndex+1)%stadiumChants.length;const u=new SpeechSynthesisUtterance(phrase);u.lang='es-MX';u.rate=.88;u.pitch=.82;u.volume=1;try{const voices=speechSynthesis.getVoices();const v=voices.find(x=>/^es(-|_)/i.test(x.lang));if(v)u.voice=v;}catch(e){}const finish=()=>{if(!chantBusy)return;chantBusy=false;scheduleNextChant()};u.onend=finish;u.onerror=finish;try{speechSynthesis.speak(u)}catch(e){finish()}}
 function startChants(){if(!('speechSynthesis'in window))return;try{speechSynthesis.cancel()}catch(e){}chantBusy=false;chantIndex=0;speakNextChant()}
 function stopChants(){clearTimeout(chantTimer);chantTimer=null;chantBusy=false;if('speechSynthesis'in window){try{speechSynthesis.cancel()}catch(e){}}}
 const melody=[659.25,783.99,987.77,783.99,587.33,698.46,880,698.46,523.25,659.25,783.99,659.25,587.33,698.46,880,1046.5];
@@ -102,8 +102,7 @@ async function toggleMusic(){
   const resumePromise=musicCtx.resume();
   await resumePromise;
   if(musicCtx.state!=='running'){btn.textContent='TOCA PARA ACTIVAR';return;}
-  musicOn=true;musicStep=0;nextNoteTime=musicCtx.currentTime+.04;
-  scheduleMusicNote();clearInterval(musicTimer);musicTimer=setInterval(scheduleMusicNote,45);startChants();
+  musicOn=true;clearInterval(musicTimer);musicTimer=null;startChants();
   btn.textContent='⚽ ESTADIO ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
  }catch(err){stopMusic();btn.textContent='REINTENTAR MÚSICA';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
 }
