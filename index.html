@@ -37,39 +37,49 @@ const themeSelect=$('themeMode'),savedTheme=safeStore.get('bmjg-theme','auto');
 function applyTheme(mode){const resolved=mode==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):mode;document.documentElement.dataset.theme=resolved;themeSelect.value=mode;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=resolved==='light'?'#edf3f6':'#09121b';}
 applyTheme(savedTheme);themeSelect.addEventListener('change',()=>{safeStore.set('bmjg-theme',themeSelect.value);applyTheme(themeSelect.value)});
 if(window.matchMedia){const mq=window.matchMedia('(prefers-color-scheme: light)');const onChange=()=>{if(safeStore.get('bmjg-theme','auto')==='auto')applyTheme('auto')};if(mq.addEventListener)mq.addEventListener('change',onChange);else if(mq.addListener)mq.addListener(onChange);}
-// Música arcade original generada localmente: no requiere archivos ni internet.
-let musicCtx=null,musicTimer=null,musicStep=0,musicOn=false;
+// Música arcade original generada localmente con Web Audio API.
+// El AudioContext se crea y se reanuda directamente desde el toque del usuario (Safari/iOS).
+let musicCtx=null,musicTimer=null,musicStep=0,musicOn=false,nextNoteTime=0;
 const melody=[659.25,783.99,987.77,783.99,587.33,698.46,880,698.46,523.25,659.25,783.99,659.25,587.33,698.46,880,1046.5];
-function playMusicNote(){
- if(!musicCtx||musicCtx.state!=='running')return;
- const now=musicCtx.currentTime,frequency=melody[musicStep%melody.length];
- const osc=musicCtx.createOscillator(),gain=musicCtx.createGain();
- osc.type='square';osc.frequency.setValueAtTime(frequency,now);
- gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.035,now+.012);gain.gain.exponentialRampToValueAtTime(.0001,now+.16);
- osc.connect(gain);gain.connect(musicCtx.destination);osc.start(now);osc.stop(now+.17);
- if(musicStep%4===0){const bass=musicCtx.createOscillator(),bg=musicCtx.createGain();bass.type='triangle';bass.frequency.value=frequency/2;bg.gain.setValueAtTime(.0001,now);bg.gain.exponentialRampToValueAtTime(.045,now+.015);bg.gain.exponentialRampToValueAtTime(.0001,now+.22);bass.connect(bg);bg.connect(musicCtx.destination);bass.start(now);bass.stop(now+.23);}
- musicStep++;
+function scheduleMusicNote(){
+ if(!musicCtx||musicCtx.state!=='running'||!musicOn)return;
+ const now=musicCtx.currentTime;
+ while(nextNoteTime<now+.12){
+  const f=melody[musicStep%melody.length];
+  const osc=musicCtx.createOscillator(),gain=musicCtx.createGain();
+  osc.type='square';osc.frequency.setValueAtTime(f,nextNoteTime);
+  gain.gain.setValueAtTime(0.0001,nextNoteTime);
+  gain.gain.linearRampToValueAtTime(0.075,nextNoteTime+.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001,nextNoteTime+.19);
+  osc.connect(gain);gain.connect(musicCtx.destination);osc.start(nextNoteTime);osc.stop(nextNoteTime+.20);
+  if(musicStep%4===0){
+   const bass=musicCtx.createOscillator(),bg=musicCtx.createGain();
+   bass.type='triangle';bass.frequency.setValueAtTime(f/2,nextNoteTime);
+   bg.gain.setValueAtTime(0.0001,nextNoteTime);bg.gain.linearRampToValueAtTime(0.065,nextNoteTime+.015);bg.gain.exponentialRampToValueAtTime(0.0001,nextNoteTime+.24);
+   bass.connect(bg);bg.connect(musicCtx.destination);bass.start(nextNoteTime);bass.stop(nextNoteTime+.25);
+  }
+  musicStep++;nextNoteTime+=.22;
+ }
 }
+function stopMusic(){musicOn=false;clearInterval(musicTimer);musicTimer=null;if(musicCtx&&musicCtx.state==='running')musicCtx.suspend();}
 async function toggleMusic(){
  const btn=$('musicToggle');
+ if(musicOn){stopMusic();btn.textContent='♫ MÚSICA OFF';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');return;}
  try{
-  if(!musicOn){
-   const AC=window.AudioContext||window.webkitAudioContext;
-   if(!AC){btn.textContent='♪ AUDIO NO DISP.';return;}
-   musicCtx=musicCtx||new AC();
-   await musicCtx.resume();
-   if(musicCtx.state!=='running'){btn.textContent='TOCA PARA ACTIVAR';return;}
-   musicOn=true;musicStep=0;playMusicNote();
-   clearInterval(musicTimer);musicTimer=setInterval(()=>{if(musicCtx&&musicCtx.state==='running')playMusicNote()},190);
-   btn.textContent='♫ MÚSICA ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
-  }else{
-   musicOn=false;clearInterval(musicTimer);musicTimer=null;
-   if(musicCtx)await musicCtx.suspend();
-   btn.textContent='♫ MÚSICA OFF';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');
-  }
- }catch(err){musicOn=false;clearInterval(musicTimer);musicTimer=null;btn.textContent='REINTENTAR MÚSICA';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC){btn.textContent='♪ AUDIO NO DISP.';return;}
+  if(!musicCtx)musicCtx=new AC();
+  // Invocado por el toque del usuario para cumplir la política de reproducción de iOS.
+  const resumePromise=musicCtx.resume();
+  await resumePromise;
+  if(musicCtx.state!=='running'){btn.textContent='TOCA PARA ACTIVAR';return;}
+  musicOn=true;musicStep=0;nextNoteTime=musicCtx.currentTime+.04;
+  scheduleMusicNote();clearInterval(musicTimer);musicTimer=setInterval(scheduleMusicNote,45);
+  btn.textContent='♫ MÚSICA ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
+ }catch(err){stopMusic();btn.textContent='REINTENTAR MÚSICA';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
 }
 $('musicToggle').addEventListener('click',toggleMusic);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&musicOn){stopMusic();const b=$('musicToggle');b.textContent='♫ MÚSICA OFF';b.classList.remove('on');b.setAttribute('aria-pressed','false');}});
 const cv=$('board'),ctx=cv.getContext('2d'),W=10,H=20,S=30;
 const shapes=[{m:[[1,1,1,1]],c:'#00d9f2'},{m:[[1,1],[1,1]],c:'#ffd43b'},{m:[[0,1,0],[1,1,1]],c:'#b56cff'},{m:[[1,0,0],[1,1,1]],c:'#398cff'},{m:[[0,0,1],[1,1,1]],c:'#ff9138'},{m:[[0,1,1],[1,1,0]],c:'#35e28b'},{m:[[1,1,0],[0,1,1]],c:'#ff5478'}];let board,piece,next,score,lines,level,best=Number(safeStore.get('bmjg-best','0')),active=false,paused=false,over=false,last=0,acc=0,raf=0,particles=[],flash=0;
 const clone=m=>m.map(r=>r.slice()),rand=()=>shapes[Math.floor(Math.random()*shapes.length)],make=s=>({m:clone(s.m),c:s.c,x:Math.floor((W-s.m[0].length)/2),y:0});
