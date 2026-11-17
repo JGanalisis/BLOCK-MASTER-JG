@@ -169,15 +169,58 @@ html[data-theme="light"] .stats .stat b{
  text-shadow:0 0 10px rgba(0,190,255,.38)!important;
 }
 
-</style></head><body><main id="app">
+
+.history-open{display:block;margin:2px auto 0;padding:2px 7px;border:1px solid #28c7e8;border-radius:7px;background:#09243a;color:#8ef4ff;font-size:9px;font-weight:900}
+.history-panel{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,7,16,.82);align-items:center;justify-content:center;padding:18px}
+.history-panel.show{display:flex}
+.history-card{position:relative;width:min(92vw,390px);max-height:78vh;overflow:auto;border:2px solid #20bce3;border-radius:18px;padding:20px;background:linear-gradient(160deg,#102d45,#061321);color:#f4fbff;box-shadow:0 0 30px #00cfff55}
+.history-heading{text-align:center;color:#8af3ff;font-weight:1000;font-size:16px;letter-spacing:1px;margin:8px 0 14px}
+.history-close{position:absolute;right:12px;top:8px;border:0;background:transparent;color:white;font-size:28px}
+.history-last{padding:10px;border-radius:10px;background:#ffffff12;color:#bfeaf2;font-size:12px}
+.history-last b{color:#fff;font-size:18px}
+.history-list{padding-left:28px;margin:14px 0}
+.history-list li{padding:7px 5px;border-bottom:1px solid #ffffff20;font-weight:800}
+.history-list li span{float:right;color:#8af3ff;font-size:11px;font-weight:500}
+.history-note{text-align:center;color:#9eb7c5;font-size:10px}
+html[data-theme="light"] .history-card{background:linear-gradient(160deg,#102d45,#061321);color:#fff}
+@media(max-width:520px){.record{font-size:8px!important}.history-open{font-size:8px;padding:2px 5px}}
+\n</style></head><body><main id="app">
 <header class="brand" aria-label="Logo permanente JG MATCHLAB"><img alt="BLOCK MASTER JG by Jorge Gramajo" src="block-master-logo.png"></header>
 <section class="stats"><div class="stat"><small>PUNTOS</small><b id="score">0</b></div><div class="stat"><small>NIVEL</small><b id="level">1</b></div><div class="stat"><small>GOLES ⚽</small><b id="lines">0</b></div></section>
 <section class="gamezone"><div class="field"><canvas id="board" width="300" height="600" aria-label="Tablero de BLOCK MASTER JG"></canvas><div class="overlay" id="overlay"><div><div style="font-size:42px" id="ovIcon">⚽</div><h2 id="ovTitle">PARTIDO TERMINADO</h2><p id="ovText"></p><button class="btn" id="ovButton">JUGAR DE NUEVO</button></div></div></div></section>
 <section class="controls"><div><div class="control-title">MOVIMIENTO</div><div class="dpad-wrap"><button class="dpad" data-act="up" aria-label="Arriba">▲</button><button class="dpad" data-act="left" aria-label="Izquierda">◀</button><button class="dpad" data-act="right" aria-label="Derecha">▶</button><button class="dpad" data-act="down" aria-label="Abajo">▼</button></div></div><div><div class="control-title">ACCIONES</div><div class="action-wrap"><div class="action-item"><button class="ab a" data-act="rotate">A</button><div>GIRAR</div></div><div class="action-item"><button class="ab b" data-act="drop">B</button><div>CAÍDA RÁPIDA</div></div></div></div></section>
-<footer class="bottom"><div class="record">RÉCORD <b id="best">0</b></div><button class="secondary" id="pause">Ⅱ PAUSA</button><button class="btn" id="restart">↻ NUEVA</button><button class="music-btn" id="musicToggle" type="button" aria-pressed="false">📣 PORRAS OFF</button><label class="theme-picker" for="themeMode">TEMA <select id="themeMode" aria-label="Elegir tema"><option value="auto">Automático</option><option value="dark">Oscuro</option><option value="light">Claro</option></select></label></footer>
-</main><script>
+<footer class="bottom"><div class="record">MEJOR MARCA <b id="best">0</b><button id="historyOpen" class="history-open" type="button">TOP 10</button></div><button class="secondary" id="pause">Ⅱ PAUSA</button><button class="btn" id="restart">↻ NUEVA</button><button class="music-btn" id="musicToggle" type="button" aria-pressed="false">📣 PORRAS OFF</button><label class="theme-picker" for="themeMode">TEMA <select id="themeMode" aria-label="Elegir tema"><option value="auto">Automático</option><option value="dark">Oscuro</option><option value="light">Claro</option></select></label></footer>
+</main><div id="historyPanel" class="history-panel" aria-hidden="true">
+ <div class="history-card">
+  <button id="historyClose" class="history-close" type="button" aria-label="Cerrar">×</button>
+  <div class="history-heading">🏆 HISTORIAL DE RÉCORDS</div>
+  <div class="history-last">ÚLTIMA PARTIDA: <b id="lastScore">—</b></div>
+  <ol id="historyList" class="history-list"></ol>
+  <div class="history-note">Tus 10 mejores puntuaciones en este dispositivo</div>
+ </div>
+</div>
+<script>
 (()=>{'use strict';const $=id=>document.getElementById(id);
 const safeStore={get(k,fallback){try{return localStorage.getItem(k)??fallback}catch(e){return fallback}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const HISTORY_KEY='bmjg-score-history-v1',LAST_KEY='bmjg-last-score-v1';
+function readHistory(){try{return JSON.parse(safeStore.get(HISTORY_KEY,'[]'))||[]}catch(e){return []}}
+function renderHistory(){
+ const list=$('historyList');if(!list)return;
+ const items=readHistory().slice(0,10);list.innerHTML='';
+ items.forEach((item,i)=>{const li=document.createElement('li');li.textContent=(i+1)+'. '+Number(item.score).toLocaleString();const span=document.createElement('span');span.textContent=item.date||'';li.appendChild(span);list.appendChild(li)});
+ $('lastScore').textContent=Number(safeStore.get(LAST_KEY,'0')).toLocaleString();
+ if(!items.length){const li=document.createElement('li');li.textContent='Aún no hay partidas registradas';list.appendChild(li)}
+}
+function saveFinishedScore(){
+ const date=new Date().toLocaleDateString('es-GT',{day:'2-digit',month:'2-digit',year:'numeric'});
+ const items=readHistory();items.push({score:Number(score)||0,date});
+ items.sort((a,b)=>b.score-a.score);safeStore.set(HISTORY_KEY,JSON.stringify(items.slice(0,10)));
+ safeStore.set(LAST_KEY,String(score));
+}
+$('historyOpen').addEventListener('click',()=>{renderHistory();$('historyPanel').classList.add('show');$('historyPanel').setAttribute('aria-hidden','false')});
+$('historyClose').addEventListener('click',()=>{$('historyPanel').classList.remove('show');$('historyPanel').setAttribute('aria-hidden','true')});
+$('historyPanel').addEventListener('click',e=>{if(e.target===$('historyPanel'))$('historyClose').click()});
+
 const themeSelect=$('themeMode'),savedTheme=safeStore.get('bmjg-theme','auto');
 function applyTheme(mode){const resolved=mode==='auto'?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):mode;document.documentElement.dataset.theme=resolved;themeSelect.value=mode;const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=resolved==='light'?'#edf3f6':'#09121b';}
 applyTheme(savedTheme);themeSelect.addEventListener('change',()=>{safeStore.set('bmjg-theme',themeSelect.value);applyTheme(themeSelect.value)});
@@ -337,7 +380,7 @@ if(goalFx>0){
 }
 for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(board[y][x])cell(board[y][x],x,y);if(piece){let g={...piece};while(!hit(g,0,1))g.y++;g.m.forEach((r,y)=>r.forEach((v,x)=>{if(v)cell(piece.c,g.x+x,g.y+y,.22)}));piece.m.forEach((r,y)=>r.forEach((v,x)=>{if(v)cell(piece.c,piece.x+x,piece.y+y)}))}if(flash>0){ctx.fillStyle='rgba(255,255,255,'+(flash*.42)+')';ctx.fillRect(0,0,300,600);flash=Math.max(0,flash-.09)}particles=particles.filter(p=>p.life>0);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.13;p.life-=.035;ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=10;ctx.fillRect(p.x,p.y,p.size,p.size);ctx.shadowBlur=0});ctx.globalAlpha=1}
 function show(title,txt,icon='⚽',button='JUGAR DE NUEVO'){ $('ovTitle').textContent=title;$('ovText').textContent=txt;$('ovIcon').textContent=icon;$('ovButton').textContent=button;$('overlay').classList.add('show')}
-function finish(){over=true;active=false;best=Math.max(best,score);safeStore.set('bmjg-best',best);update();show('¡PARTIDO TERMINADO!','Puntuación final: '+score.toLocaleString(),'🏆')}
+function finish(){over=true;active=false;best=Math.max(best,score);safeStore.set('bmjg-best',best);saveFinishedScore();update();show('¡PARTIDO TERMINADO!','Puntuación final: '+score.toLocaleString(),'🏆')}
 function tick(t){if(!active)return;let dt=Math.min(t-last,100);last=t;if(!paused&&!over){acc+=dt;if(acc>=Math.max(90,800-(level-1)*65)){acc=0;if(!hit(piece,0,1))piece.y++;else lock()}draw()}raf=requestAnimationFrame(tick)}
 function start(){cancelAnimationFrame(raf);board=Array.from({length:H},()=>Array(W).fill(0));score=0;lines=0;level=1;over=false;paused=false;active=true;goalFx=0;acc=0;last=performance.now();next=rand();spawn();$('overlay').classList.remove('show');$('pause').textContent='Ⅱ PAUSA';update();draw();raf=requestAnimationFrame(tick)}
 function pause(){if(!active||over)return;paused=!paused;$('pause').textContent=paused?'▶ SEGUIR':'Ⅱ PAUSA';if(paused)show('PARTIDO PAUSADO','Continúa cuando estés listo.','⏸','CONTINUAR');else $('overlay').classList.remove('show')}
