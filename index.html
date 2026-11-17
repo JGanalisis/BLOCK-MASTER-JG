@@ -118,6 +118,29 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 }
 .field{position:relative;z-index:2}
 
+
+/* ESTADIO LLENO JG: imagen realista de gradas y reflectores */
+html,body{background:#06111b}
+body{
+ background-color:#06111b;
+ background-image:linear-gradient(180deg,rgba(2,8,16,.18),rgba(2,8,16,.36)),url('./stadium-night.jpg');
+ background-position:center center;
+ background-size:cover;
+ background-attachment:fixed;
+ background-repeat:no-repeat;
+}
+#app{background:transparent}
+.gamezone{
+ background:linear-gradient(90deg,rgba(3,12,20,.08),rgba(3,12,20,.54) 24%,rgba(3,12,20,.54) 76%,rgba(3,12,20,.08));
+ box-shadow:inset 0 0 26px rgba(0,0,0,.3);
+}
+.gamezone:before{background:linear-gradient(180deg,rgba(2,8,15,.18),rgba(2,8,15,.42));opacity:1}
+.gamezone:after{content:"";display:none}
+.stats,.controls,.bottom{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+@media(max-width:520px) and (orientation:portrait){
+ body{background-position:center center}
+}
+
 </style></head><body><main id="app">
 <header class="brand" aria-label="Logo permanente JG MATCHLAB"><img alt="BLOCK MASTER JG by Jorge Gramajo" src="block-master-logo.png"></header>
 <section class="stats"><div class="stat"><small>PUNTOS</small><b id="score">0</b></div><div class="stat"><small>NIVEL</small><b id="level">1</b></div><div class="stat"><small>GOLES ⚽</small><b id="lines">0</b></div></section>
@@ -209,6 +232,20 @@ function playCrowdGoal(){
   if(a.state==='running')play();else a.resume().then(()=>{if(a.state==='running')play()}).catch(()=>{});
  }catch(e){}
 }
+// Desbloqueo de audio para Safari/iOS: el AudioContext debe reanudarse
+// durante un gesto real del usuario, antes de que ocurra la celebración.
+let gameAudioUnlocked=false;
+function unlockGameAudio(){
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return;
+  if(!musicCtx)musicCtx=new AC();
+  if(musicCtx.state!=='running')musicCtx.resume().then(()=>{gameAudioUnlocked=musicCtx.state==='running'}).catch(()=>{});
+  else gameAudioUnlocked=true;
+ }catch(e){}
+}
+document.addEventListener('pointerdown',unlockGameAudio,{capture:true,passive:true});
+document.addEventListener('touchstart',unlockGameAudio,{capture:true,passive:true,once:true});
 function prepareGameAudio(){
  try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
   if(!musicCtx)musicCtx=new AC();
