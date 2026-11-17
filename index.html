@@ -175,6 +175,8 @@ function toggleMusic(){
  btn.textContent='📣 PORRAS ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
 }
 $('musicToggle').addEventListener('click',toggleMusic);
+// Contexto de audio compartido: debe declararse antes de cualquier efecto de gol.
+let musicCtx=null;
 // Efecto original de explosión al completar una o más líneas.
 // Se sintetiza localmente con Web Audio; no requiere archivos externos.
 function playLineExplosion(count){
