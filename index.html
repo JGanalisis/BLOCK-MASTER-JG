@@ -29,7 +29,7 @@ html[data-theme="light"] .theme-picker select{background:#fff;color:#17232d;bord
 <section class="stats"><div class="stat"><small>PUNTOS</small><b id="score">0</b></div><div class="stat"><small>NIVEL</small><b id="level">1</b></div><div class="stat"><small>GOLES ⚽</small><b id="lines">0</b></div></section>
 <section class="gamezone"><div class="field"><canvas id="board" width="300" height="600" aria-label="Tablero de BLOCK MASTER JG"></canvas><div class="overlay" id="overlay"><div><div style="font-size:42px" id="ovIcon">⚽</div><h2 id="ovTitle">PARTIDO TERMINADO</h2><p id="ovText"></p><button class="btn" id="ovButton">JUGAR DE NUEVO</button></div></div></div></section>
 <section class="controls"><div><div class="control-title">MOVIMIENTO</div><div class="dpad-wrap"><button class="dpad" data-act="up" aria-label="Arriba">▲</button><button class="dpad" data-act="left" aria-label="Izquierda">◀</button><button class="dpad" data-act="right" aria-label="Derecha">▶</button><button class="dpad" data-act="down" aria-label="Abajo">▼</button></div></div><div><div class="control-title">ACCIONES</div><div class="action-wrap"><div class="action-item"><button class="ab a" data-act="rotate">A</button><div>GIRAR</div></div><div class="action-item"><button class="ab b" data-act="drop">B</button><div>CAÍDA RÁPIDA</div></div></div></div></section>
-<footer class="bottom"><div class="record">RÉCORD <b id="best">0</b></div><button class="secondary" id="pause">Ⅱ PAUSA</button><button class="btn" id="restart">↻ NUEVA</button><button class="music-btn" id="musicToggle" type="button" aria-pressed="false">⚽ ESTADIO OFF</button><label class="theme-picker" for="themeMode">TEMA <select id="themeMode" aria-label="Elegir tema"><option value="auto">Automático</option><option value="dark">Oscuro</option><option value="light">Claro</option></select></label></footer>
+<footer class="bottom"><div class="record">RÉCORD <b id="best">0</b></div><button class="secondary" id="pause">Ⅱ PAUSA</button><button class="btn" id="restart">↻ NUEVA</button><button class="music-btn" id="musicToggle" type="button" aria-pressed="false">📣 PORRAS OFF</button><label class="theme-picker" for="themeMode">TEMA <select id="themeMode" aria-label="Elegir tema"><option value="auto">Automático</option><option value="dark">Oscuro</option><option value="light">Claro</option></select></label></footer>
 </main><script>
 (()=>{'use strict';const $=id=>document.getElementById(id);
 const safeStore={get(k,fallback){try{return localStorage.getItem(k)??fallback}catch(e){return fallback}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
@@ -91,20 +91,20 @@ function scheduleMusicNote(){
  }
 }
 function stopMusic(){musicOn=false;clearInterval(musicTimer);musicTimer=null;stopChants();if(musicCtx&&musicCtx.state==='running')musicCtx.suspend();}
-async function toggleMusic(){
+function toggleMusic(){
  const btn=$('musicToggle');
- if(musicOn){stopMusic();btn.textContent='⚽ ESTADIO OFF';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');return;}
+ if(musicOn){stopMusic();btn.textContent='📣 PORRAS OFF';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');return;}
  try{
+  // Iniciar la primera voz de forma síncrona dentro del toque del usuario.
+  // Safari/iOS puede bloquear speechSynthesis si se llama después de un await.
+  musicOn=true;chantIndex=0;chantBusy=false;
+  if('speechSynthesis' in window){try{window.speechSynthesis.cancel();}catch(e){}speakNextChant();}
   const AC=window.AudioContext||window.webkitAudioContext;
-  if(!AC){btn.textContent='♪ AUDIO NO DISP.';return;}
-  if(!musicCtx)musicCtx=new AC();
-  // Invocado por el toque del usuario para cumplir la política de reproducción de iOS.
-  const resumePromise=musicCtx.resume();
-  await resumePromise;
-  if(musicCtx.state!=='running'){btn.textContent='TOCA PARA ACTIVAR';return;}
-  musicOn=true;clearInterval(musicTimer);musicTimer=null;startChants();
-  btn.textContent='⚽ ESTADIO ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
- }catch(err){stopMusic();btn.textContent='REINTENTAR MÚSICA';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
+  if(AC){if(!musicCtx)musicCtx=new AC();const resume=musicCtx.resume();if(resume&&resume.catch)resume.catch(()=>{});}
+  btn.textContent='📣 PORRAS ON';btn.classList.add('on');btn.setAttribute('aria-pressed','true');
+  // Si iOS todavía está cargando las voces, reintentar cuando estén disponibles.
+  if('speechSynthesis' in window){window.speechSynthesis.onvoiceschanged=()=>{if(musicOn&&!chantBusy)speakNextChant();};}
+ }catch(err){stopMusic();btn.textContent='REINTENTAR PORRAS';btn.classList.remove('on');btn.setAttribute('aria-pressed','false');}
 }
 $('musicToggle').addEventListener('click',toggleMusic);
 // Efecto original de explosión al completar una o más líneas.
@@ -200,7 +200,7 @@ function playGoalSound(count){
   if(a.state==='running')play();else a.resume().then(()=>{if(a.state==='running')play()}).catch(()=>{});
  }catch(e){}
 }
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&musicOn){stopMusic();const b=$('musicToggle');b.textContent='⚽ ESTADIO OFF';b.classList.remove('on');b.setAttribute('aria-pressed','false');}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&musicOn){stopMusic();const b=$('musicToggle');b.textContent='📣 PORRAS OFF';b.classList.remove('on');b.setAttribute('aria-pressed','false');}});
 const cv=$('board'),ctx=cv.getContext('2d'),W=10,H=20,S=30;
 const shapes=[{m:[[1,1,1,1]],c:'#00d9f2'},{m:[[1,1],[1,1]],c:'#ffd43b'},{m:[[0,1,0],[1,1,1]],c:'#b56cff'},{m:[[1,0,0],[1,1,1]],c:'#398cff'},{m:[[0,0,1],[1,1,1]],c:'#ff9138'},{m:[[0,1,1],[1,1,0]],c:'#35e28b'},{m:[[1,1,0],[0,1,1]],c:'#ff5478'}];let board,piece,next,score,lines,level,best=Number(safeStore.get('bmjg-best','0')),active=false,paused=false,over=false,last=0,acc=0,raf=0,particles=[],flash=0,goalFx=0;
 const clone=m=>m.map(r=>r.slice()),rand=()=>shapes[Math.floor(Math.random()*shapes.length)],make=s=>({m:clone(s.m),c:s.c,x:Math.floor((W-s.m[0].length)/2),y:0});
